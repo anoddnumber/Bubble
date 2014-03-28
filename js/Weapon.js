@@ -1,9 +1,33 @@
 /*
  * Represents any weapon.
  * Need to specify name, infiniteUses, numUses, weaponDelay, weaponSound, cursorSource, attackImage, attackTime
- * popBubbles();
+ * 
+ * ARGS:
+ * name - Name of the weapon
+ * infiniteUses - true if infinite ammo
+ * numUses - ammount of ammo, ignored if infiniteUses is true
+ * delay - amount of delay the weapon has between uses
+ * sound - the sound the weapon makes when used
+ * cursorSource - the source of the cursor that will be displayed when the user is using this Weapon
+ * atkImage - what is displayed when the weapon attacks
+ * atkTime - how long the atkImage is displayed
+ * 
  */
-function Weapon(I) {
+function Weapon(name, infiniteUses, numUses, delay, sound, cursorSource, atkImage, atkTime) {
+	
+	var I = {};
+	
+	//properties based on arguments
+	I.name = name;
+	I.infiniteUses = infiniteUses;
+	I.numUses = numUses;
+	I.weaponDelay = delay;
+	I.weaponSound = sound;
+	I.cursorSource = cursorSource;
+	I.attackImage = atkImage;
+	I.attackTime = atkTime;
+	
+	//additional properties
 	I.weaponDelayed = false;
 	
 	I.getName = function() {
@@ -53,12 +77,7 @@ function Weapon(I) {
 	};
 	
 	I.displayAttack = function() {
-		var img = TempImage({
-			x : mouseX,
-			y : mouseY,
-			image : I.attackImage,
-			numFramesToDisplay: I.attackTime,
-		});
+		var img = TempImage(mouseX, mouseY, I.attackImage, I.attackTime);
 		tempImages.push(img);
 	};
 	
@@ -68,7 +87,8 @@ function Weapon(I) {
 		}
 		I.weaponDelayed = true;
 		//TODO might need to put function separately?
-		var weaponDelayId = setTimeout(function() {
+		var weaponDelayId = 0;
+		weaponDelayId = setTimeout(function() {
 			I.weaponDelayed = false;
 			clearTimeout(weaponDelayId);
 		}, numMilliseconds);
@@ -93,16 +113,7 @@ function Weapon(I) {
 }
 
 function Pistol() {
-	var I = Weapon({
-		name :			"Pistol",
-		infiniteUses :	true,
-		numUses :		-1,
-		weaponDelay :	100,
-		weaponSound :	"gunShot",
-		cursorSource :	"img/circle.gif",
-		attackImage : 	bulletImage,
-		attackTime : 	3
-	});
+	var I = Weapon("Pistol", true, -1, 100, "gunShot", "img/circle.gif", bulletImage, 3);
 	
 	I.popBubbles = function() {
 		bubbles.forEach(function(bubble) {
@@ -116,16 +127,7 @@ function Pistol() {
 }
 
 function MachineGun() {
-	var I = Weapon({
-		name :			"Machine Gun",
-		infiniteUses :	false,
-		numUses :		30,
-		weaponDelay :	100,
-		weaponSound :	"gunShot",
-		cursorSource :	"img/scope.gif",
-		attackImage : 	bulletImage,
-		attackTime : 	3
-	});
+	var I = Weapon("Machine Gun", false, 30, 100, "gunShot", "img/scope.gif", bulletImage, 3);
 	
 	I.popBubbles = function() {
 		bubbles.forEach(function(bubble) {
@@ -138,16 +140,7 @@ function MachineGun() {
 }
 
 function ShotGun() {
-	var I = Weapon({
-		name :			"Shot Gun",
-		infiniteUses :	false,
-		numUses :		10,
-		weaponDelay :	500,
-		weaponSound :	"gunShot",
-		cursorSource :	"img/scope3.gif",
-		attackImage : 	bulletImage,
-		attackTime : 	3
-	});
+	var I = Weapon("Shot Gun", false, 10, 500, "gunShot", "img/scope3.gif", bulletImage, 3);
 	
 	I.shotGunRadius = 200;
 	
@@ -159,4 +152,19 @@ function ShotGun() {
 		});
 	};
 	return I;
+}
+
+function attackWithMachineGun() {
+	var weapon = inventory.getCurrentWeapon();
+	if (mouseDown && isSameWeapon(weapon, MachineGun())) {
+		weapon.attack();
+	}
+}
+
+function isSameWeapon(weapon1, weapon2) {
+	if (weapon1 == null || weapon2 == null) {
+		return false;
+	}
+	
+	return weapon1.getName() == weapon2.getName();
 }

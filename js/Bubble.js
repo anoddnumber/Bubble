@@ -1,8 +1,30 @@
 /*
  * Represents a bubble.
- * Need to specify x, y, hitsRequired, speed, image, points, weapon (optional)
+ * 
+ * ARGS:
+ * speed - number of pixels the bubble will move per frame
+ * hitsReq - number of hits needed to pop the bubble
+ * x - x position of the bubble
+ * y - y position of the bubble
+ * image - the image for the bubble
+ * points - number of points you get for hitting (not popping) the bubble
+ * weapon - the weapon you get for popping the bubble
+ * 
  */
-function Bubble(I) {
+function Bubble(speed, hitsReq, x, y, image, points, weapon) {
+	
+	var I = {};
+	//properties based on arguments
+	I.speed = speed;
+	I.hitsRequired = hitsReq;
+	I.x = x;
+	I.y = y;
+	I.image = image;
+	I.points = points;
+	I.weapon = weapon;
+	
+	//other properties
+	I.imageShape = getImageShape();	
 	I.xVelocity = 0;
 	I.yVelocity = -I.speed;
 
@@ -42,12 +64,7 @@ function Bubble(I) {
 	//does not actually remove the bubble from the screen
 	I.pop = function() {
 		Sound.play("balloon_pop");
-		var img = TempImage({
-			x : I.x,
-			y : I.y,
-			image : poppedImage,
-			numFramesToDisplay: 5
-		});
+		var img = TempImage(I.x, I.y, poppedImage, 5);
 		//add the image to the front of the list to display the dead image first before the bullet
 		tempImages.unshift(img);
 	};
@@ -74,37 +91,91 @@ function Bubble(I) {
 }
 
 function BasicBubble() {
-	return Bubble({
-		speed : 4,
-		hitsRequired : 1,
-		y : gameCanvas.height * .92,
-		image : bubbleImage,
-		imageShape : getImageShape(),
-		points : 1
-	});
+	return Bubble(4, 1, getRandomXPosition(bubbleImage), gameCanvas.height * .92, bubbleImage, 1, null);
 }
 
 function MachineGunBubble() {
-	var b = Bubble({
-		speed : 8,
-		hitsRequired : 1,
-		y : gameCanvas.height * .92,
-		image : machineGunImage,
-		imageShape : "rectangle", //TODO: might need to change later
-		points : 1,
-		weapon : MachineGun()
-	});
-	return b;
+	var I = Bubble(8, 1, getRandomXPosition(bubbleImage), gameCanvas.height * .92, machineGunImage, 1, MachineGun());
+	I.imageShape = "rectangle";
+	return I; //ignore this warning, may the plugin's bug
 }
 
 function ShotGunBubble() {
-	return Bubble({
-		speed : 9,
-		hitsRequired : 1,
-		y : gameCanvas.height * .92,
-		image : shotGunImage,
-		imageShape : "rectangle", //TODO: might need to change later
-		points : 1,
-		weapon : ShotGun()
+	var I = Bubble(9, 1, getRandomXPosition(bubbleImage), gameCanvas.height * .92, shotGunImage, 1, ShotGun());
+	I.imageShape = "rectangle";
+	return I; //ignore this warning, may the plugin's bug
+}
+
+function updateBubbles() {
+	
+	//update each bubble
+	bubbles.forEach(function(bubble) {
+		bubble.update();
+		if (bubble.isAtTop()) {
+			loseLife();
+			bubble.pop();
+		}
 	});
+	
+	//get rid of non active bubbles
+	bubbles = filter(bubbles);
+}
+
+/*
+ * Make bubbles constantly
+ */
+function startBubbleMaker(bubble, numSec) {
+	var bubbleMakerId = setInterval(function() {
+		createBubble(bubble);
+	}, numSec * 1000);
+	
+	bubbleMakerIds.push(bubbleMakerId);
+}
+
+function stopBubbleMakers() {
+	for (var i = 0; i < bubbleMakerIds.length; i++) {
+		clearInterval(bubbleMakerIds[i]);
+	}
+	bubbleMakerIds = [];
+}
+
+function createBubble(bubble) {
+	createBubbles(bubble, 1);
+}
+
+function createBubbles(bubble, num) {
+	for (var i = 0; i < num; i++) {
+		var weapon = bubble.weapon;
+		var weaponCopy = null;
+		if (weapon != null) {
+			weaponCopy = weapon.getCopy();
+		}
+		
+		var bubbleCopy = Bubble(bubble.speed * difficulty, bubble.hitsRequired, null, bubble.y, bubble.image, bubble.points, weaponCopy);
+		bubbleCopy.imageShape = bubble.imageShape;
+		
+		var xStart = gameCanvas.width/2;
+		
+		if (bubble.image != null) {
+			xStart = Math.random() * (gameCanvas.width - bubble.image.width) + bubble.image.width/2;
+			// the image width may be 0 since it is not loaded yet,
+			// so just put it somewhere in the middle for now
+			if (bubbleCopy.image.width == 0) {
+				xStart = Math.random() * gameCanvas.width/2 + gameCanvas.width/4;
+			}
+			bubbleCopy.x = xStart;
+		}
+
+		bubbles.push(bubbleCopy);
+	}
+}
+
+/*
+ * ARGS:
+ * image - the image of what will be displayed
+ * 
+ * returns a random X position such that the image can be fully displayed (not chopped off)
+ */
+function getRandomXPosition(image) {
+	return Math.random() * (gameCanvas.width - image.width) + image.width/2;
 }
